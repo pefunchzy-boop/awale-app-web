@@ -368,6 +368,11 @@
         </div>
 
         <div class="panel hidden" id="online-room-panel">
+            <div class="option-row">
+                <label for="pseudo-input">Ton pseudo</label>
+                <input type="text" id="pseudo-input" maxlength="16" placeholder="Ex: Paul-Émile">
+            </div>
+
             <div class="tabs">
                 <button class="tab-btn active" data-tab="create">Créer une partie</button>
                 <button class="tab-btn" data-tab="join">Rejoindre</button>
@@ -391,7 +396,7 @@
                 <p class="status-line" id="join-status"></p>
             </div>
 
-            <button class="ghost-btn" id="forget-firebase-btn" style="align-self:flex-start;">Changer de config Firebase</button>
+            <button class="ghost-btn hidden" id="forget-firebase-btn" style="align-self:flex-start;">Changer de config Firebase</button>
             <button class="ghost-btn" data-back="menu">← Retour</button>
         </div>
     </section>
@@ -609,6 +614,8 @@ let state = initState();
 let botDepth = 5;
 let botPlayer = 1;        // le bot joue toujours le camp du haut
 let onlineMyPlayer = null;
+let onlineHostName = '';
+let onlineGuestName = '';
 let lastMoveByPlayer = [null, null]; // dernier trou de départ joué par chaque joueur (pour l'anneau rose)
 let onlineUnsub = null;
 let onlineRoomRef = null;
@@ -667,8 +674,10 @@ function setupModeLabels() {
         $('label-p2').textContent = 'Bot (Haut)';
         $('mode-label').textContent = '🤖 Contre le bot';
     } else if (mode === 'online') {
-        $('label-p1').textContent = onlineMyPlayer === 0 ? 'Toi (Bas)' : 'Adversaire (Bas)';
-        $('label-p2').textContent = onlineMyPlayer === 1 ? 'Toi (Haut)' : 'Adversaire (Haut)';
+        const hostLabel = onlineHostName ? (onlineMyPlayer === 0 ? `${onlineHostName} (toi)` : onlineHostName) : (onlineMyPlayer === 0 ? 'Toi' : 'Adversaire');
+        const guestLabel = onlineGuestName ? (onlineMyPlayer === 1 ? `${onlineGuestName} (toi)` : onlineGuestName) : (onlineMyPlayer === 1 ? 'Toi' : 'Adversaire');
+        $('label-p1').textContent = hostLabel + ' (Bas)';
+        $('label-p2').textContent = guestLabel + ' (Haut)';
         $('mode-label').textContent = '🌐 En ligne';
     } else {
         $('label-p1').textContent = 'Joueur 1 (Bas)';
@@ -783,7 +792,20 @@ document.addEventListener('fullscreenchange', () => {
    ============================================================ */
 let fb = null; // { app, db, doc, setDoc, updateDoc, onSnapshot, getDoc }
 
+// Config intégrée au site : personne n'a besoin de la coller manuellement.
+// (Ce n'est pas une clé secrète — Firebase le précise explicitement dans sa doc,
+// la vraie protection vient des règles Firestore, pas de cacher cet objet.)
+const BUILT_IN_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAxslZ3Ts51EJIFNysqM4SLDJym7yyD40g",
+    authDomain: "awalemultijoueur-675f5.firebaseapp.com",
+    projectId: "awalemultijoueur-675f5",
+    storageBucket: "awalemultijoueur-675f5.firebasestorage.app",
+    messagingSenderId: "939294691624",
+    appId: "1:939294691624:web:026b79ef37c3146684c01d"
+};
+
 function getSavedFirebaseConfig() {
+    if (BUILT_IN_FIREBASE_CONFIG) return BUILT_IN_FIREBASE_CONFIG;
     try {
         const raw = localStorage.getItem('awale-firebase-config');
         return raw ? JSON.parse(raw) : null;
@@ -800,6 +822,7 @@ async function loadFirebase(config) {
 }
 
 function initOnlineScreen() {
+    $('pseudo-input').value = localStorage.getItem('awale-pseudo') || '';
     const saved = getSavedFirebaseConfig();
     if (saved) {
         $('online-config-panel').classList.add('hidden');
@@ -814,6 +837,12 @@ function initOnlineScreen() {
         $('online-config-panel').classList.remove('hidden');
         $('online-room-panel').classList.add('hidden');
     }
+}
+
+function getPseudo() {
+    const val = $('pseudo-input').value.trim().slice(0, 16);
+    if (val) localStorage.setItem('awale-pseudo', val);
+    return val || 'Joueur';
 }
 
 $('show-firebase-help-btn').addEventListener('click', () => {
@@ -879,11 +908,14 @@ $('create-room-btn').addEventListener('click', async () => {
     const code = randomRoomCode();
     currentRoomCode = code;
     onlineMyPlayer = 0;
+    const pseudo = getPseudo();
+    onlineHostName = pseudo;
     const initial = initState();
     try {
         await fb.setDoc(fb.doc(fb.db, 'rooms', code), {
             board: initial.board, scores: initial.scores, currentPlayer: initial.currentPlayer,
             gameOver: false, winner: null, lastMoveByPlayer: [null, null],
+            hostName: pseudo, guestName: '',
             hostPresent: true, guestPresent: false, createdAt: Date.now()
         });
         $('room-code-display').textContent = code;
@@ -910,7 +942,9 @@ $('join-room-btn').addEventListener('click', async () => {
         if (!snap.exists()) { $('join-status').textContent = "Aucune partie avec ce code."; return; }
         currentRoomCode = code;
         onlineMyPlayer = 1;
-        await fb.updateDoc(ref, { guestPresent: true });
+        const pseudo = getPseudo();
+        onlineGuestName = pseudo;
+        await fb.updateDoc(ref, { guestPresent: true, guestName: pseudo });
         enterOnlineGame(code);
     } catch (e) {
         $('join-status').textContent = "Erreur : " + e.message;
@@ -941,6 +975,8 @@ function enterOnlineGame(code) {
             gameOver: data.gameOver, winner: data.winner
         };
         lastMoveByPlayer = data.lastMoveByPlayer || [null, null];
+        onlineHostName = data.hostName || '';
+        onlineGuestName = data.guestName || '';
         setupModeLabels();
         render();
     });
@@ -961,6 +997,8 @@ function leaveOnlineRoom() {
     onlineRoomRef = null;
     currentRoomCode = null;
     onlineMyPlayer = null;
+    onlineHostName = '';
+    onlineGuestName = '';
     $('created-room-info').classList.add('hidden');
     $('join-status').textContent = '';
 }
