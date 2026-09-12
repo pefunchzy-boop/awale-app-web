@@ -1,0 +1,16 @@
+{
+  "name": "Awalé",
+  "short_name": "Awalé",
+  "description": "Jeu d'awalé — 2 joueurs, contre le bot, ou en ligne",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16100b",
+  "theme_color": "#3d2412",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

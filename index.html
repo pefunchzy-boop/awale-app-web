@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Awalé</title>
+
+<!-- Icône / PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#3d2412">
+
+<!-- Ajout à l'écran d'accueil sur iOS / Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Awalé">
+
+<!-- Android / Chrome -->
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+    :root {
+        --wood-dark: #3d2412;
+        --wood-mid: #6b4226;
+        --wood-light: #8b5a2b;
+        --pit-bg: #2e1a0d;
+        --seed: #f5e6c8;
+        --accent: #e0a96d;
+        --highlight: #f39c12;
+        --bg: #16100b;
+        --panel: #241810;
+        --text: #f2e9dc;
+        --text-dim: #b9a894;
+        --danger: #c0533e;
+        --ok: #6f9e5a;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        height: 100%;
+        margin: 0;
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: radial-gradient(ellipse at top, #241810 0%, var(--bg) 65%);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100%;
+        padding: 20px 14px 40px;
+    }
+
+    .app-shell { width: 100%; max-width: 640px; display: flex; flex-direction: column; align-items: center; }
+
+    .top-row {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+    h1 {
+        margin: 0;
+        font-size: 1.6rem;
+        letter-spacing: 0.5px;
+        color: var(--accent);
+    }
+    .icon-btn {
+        background: var(--panel);
+        border: 1px solid #3a2a1c;
+        color: var(--text);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .icon-btn:active { transform: scale(0.95); }
+
+    .screen { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .hidden { display: none !important; }
+
+    .subtitle { color: var(--text-dim); margin: 4px 0 24px; text-align: center; font-size: 0.95rem; }
+
+    .mode-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+    .mode-card {
+        background: linear-gradient(160deg, var(--wood-mid), var(--wood-dark));
+        border: 1px solid #52351e;
+        border-radius: 14px;
+        padding: 18px 20px;
+        text-align: left;
+        color: var(--text);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .mode-card:active { transform: scale(0.98); }
+    .mode-card strong { font-size: 1.05rem; color: var(--accent); }
+    .mode-card span { font-size: 0.85rem; color: var(--text-dim); }
+
+    .panel {
+        background: var(--panel);
+        border: 1px solid #3a2a1c;
+        border-radius: 14px;
+        padding: 20px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .option-row { display: flex; flex-direction: column; gap: 6px; }
+    .option-row label { font-size: 0.85rem; color: var(--text-dim); }
+
+    select, input[type="text"] {
+        background: var(--wood-dark);
+        color: var(--text);
+        border: 1px solid #52351e;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 1rem;
+    }
+
+    button.primary-btn {
+        background: var(--accent);
+        color: #24170a;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    button.primary-btn:active { transform: scale(0.98); }
+    button.primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    button.ghost-btn {
+        background: transparent;
+        color: var(--text-dim);
+        border: 1px solid #3a2a1c;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 4px; }
+    .tab-btn {
+        flex: 1;
+        background: var(--wood-dark);
+        border: 1px solid #52351e;
+        color: var(--text-dim);
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    .tab-btn.active { background: var(--accent); color: #24170a; font-weight: bold; border-color: var(--accent); }
+
+    .room-code-display {
+        font-size: 2rem;
+        letter-spacing: 6px;
+        text-align: center;
+        font-weight: bold;
+        color: var(--highlight);
+        background: var(--wood-dark);
+        border-radius: 10px;
+        padding: 14px;
+    }
+
+    .status-line { font-size: 0.85rem; color: var(--text-dim); text-align: center; }
+    .status-line.ok { color: var(--ok); }
+    .status-line.err { color: var(--danger); }
+
+    .game-topbar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 8px;
+    }
+    #mode-label { font-size: 0.85rem; color: var(--text-dim); flex: 1; text-align: center; }
+
+    .scoreboard {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 14px;
+        font-size: 1rem;
+        font-weight: bold;
+        gap: 10px;
+    }
+    .score-box {
+        flex: 1;
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 8px 12px;
+        text-align: center;
+        border: 1px solid #3a2a1c;
+    }
+    .score-box.active { border-color: var(--highlight); }
+    .score-box .label { display: block; font-size: 0.7rem; font-weight: normal; color: var(--text-dim); }
+
+    .board {
+        background: linear-gradient(160deg, var(--wood-light), var(--wood-mid) 60%, var(--wood-dark));
+        padding: 18px;
+        border-radius: 22px;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.25);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .row { display: flex; justify-content: space-between; gap: 8px; }
+
+    .pit {
+        background: radial-gradient(circle at 35% 30%, #4a2e16, var(--pit-bg));
+        width: 15%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: var(--seed);
+        box-shadow: inset 0 6px 12px rgba(0,0,0,0.75);
+        cursor: default;
+        user-select: none;
+        transition: transform 0.12s, box-shadow 0.12s;
+        position: relative;
+    }
+    .pit.playable { cursor: pointer; }
+    .pit.playable:hover { transform: scale(1.08); box-shadow: inset 0 6px 12px rgba(0,0,0,0.75), 0 0 0 2px var(--highlight); }
+    .pit.playable:active { transform: scale(0.95); }
+    .pit.disabled { opacity: 0.55; }
+    .pit.just-captured { animation: pop 0.4s ease; }
+    .pit.last-move::after {
+        content: '';
+        position: absolute;
+        inset: -5px;
+        border-radius: 50%;
+        border: 3px solid #ff3fa4;
+        box-shadow: 0 0 8px rgba(255, 63, 164, 0.6);
+        pointer-events: none;
+    }
+    @keyframes pop { 0% { transform: scale(1.3); box-shadow: 0 0 0 3px var(--highlight); } 100% { transform: scale(1); } }
+
+    .pit-index {
+        position: absolute;
+        bottom: -18px;
+        font-size: 0.6rem;
+        color: var(--text-dim);
+    }
+
+    .turn-indicator {
+        margin-top: 18px;
+        font-size: 1.05rem;
+        color: var(--highlight);
+        min-height: 28px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .instructions {
+        margin-top: 18px;
+        max-width: 600px;
+        text-align: center;
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        line-height: 1.4;
+    }
+
+    .row-owner-label {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        text-align: center;
+        margin: -4px 0 2px;
+    }
+
+    body:fullscreen { background: var(--bg); justify-content: center; }
+    body:fullscreen .instructions { display: none; }
+
+    .copy-row { display: flex; gap: 8px; }
+    .copy-row input { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+    <div class="top-row">
+        <h1>Awalé</h1>
+        <button class="icon-btn" id="fullscreen-btn" title="Plein écran">⛶</button>
+    </div>
+
+    <!-- ======================= MENU ======================= -->
+    <section id="screen-menu" class="screen">
+        <p class="subtitle">Choisis comment tu veux jouer</p>
+        <div class="mode-grid">
+            <button class="mode-card" data-mode="local">
+                <strong>🤝 2 joueurs</strong>
+                <span>À tour de rôle sur le même téléphone</span>
+            </button>
+            <button class="mode-card" data-mode="bot">
+                <strong>🤖 Contre le bot</strong>
+                <span>Une IA locale, aucune connexion requise</span>
+            </button>
+            <button class="mode-card" data-mode="online">
+                <strong>🌐 En ligne</strong>
+                <span>Défie quelqu'un sur un autre appareil avec un code</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- ======================= BOT SETUP ======================= -->
+    <section id="screen-bot-setup" class="screen hidden">
+        <p class="subtitle">Contre le bot</p>
+        <div class="panel">
+            <div class="option-row">
+                <label for="bot-difficulty">Difficulté</label>
+                <select id="bot-difficulty">
+                    <option value="3">Facile</option>
+                    <option value="5" selected>Moyen</option>
+                    <option value="7">Difficile</option>
+                </select>
+            </div>
+            <button class="primary-btn" id="bot-start-btn">Commencer la partie</button>
+            <button class="ghost-btn" data-back="menu">← Retour</button>
+        </div>
+    </section>
+
+    <!-- ======================= ONLINE SETUP ======================= -->
+    <section id="screen-online-setup" class="screen hidden">
+        <p class="subtitle">Jouer en ligne</p>
+
+        <div class="panel" id="online-config-panel">
+            <p class="status-line">Le mode en ligne a besoin d'un petit projet gratuit (Firebase) pour relayer les coups entre les deux téléphones. Ça se fait une fois, en 2 minutes, sans carte bancaire.</p>
+            <button class="primary-btn" id="show-firebase-help-btn">Comment faire →</button>
+            <div id="firebase-help" class="hidden" style="display:flex; flex-direction:column; gap:10px; font-size:0.85rem; color:var(--text-dim);">
+                <ol style="padding-left:18px; margin:0; display:flex; flex-direction:column; gap:6px;">
+                    <li>Va sur <strong>console.firebase.google.com</strong>, connecte-toi avec un compte Google, clique <strong>Ajouter un projet</strong>.</li>
+                    <li>Dans le projet, ouvre <strong>Firestore Database</strong> → <strong>Créer une base de données</strong> → mode <strong>test</strong> (ça suffit pour un jeu entre amis).</li>
+                    <li>Va dans <strong>Paramètres du projet</strong> (icône ⚙️) → onglet <strong>Général</strong> → section "Vos applications" → clique l'icône <strong>&lt;/&gt; Web</strong> pour créer une appli web.</li>
+                    <li>Copie l'objet <code>firebaseConfig</code> qui s'affiche et colle-le ci-dessous.</li>
+                </ol>
+                <p style="margin:0;">Cette config n'est pas un secret à protéger comme un mot de passe : c'est une adresse publique, la sécurité réelle vient des règles Firestore (pas besoin d'y toucher pour un jeu entre amis).</p>
+            </div>
+            <div class="option-row">
+                <label for="firebase-config-input">Colle ici l'objet firebaseConfig</label>
+                <textarea id="firebase-config-input" rows="6" style="background:var(--wood-dark); color:var(--text); border:1px solid #52351e; border-radius:8px; padding:10px; font-family:monospace; font-size:0.8rem;" placeholder='{"apiKey": "...", "projectId": "...", ...}'></textarea>
+            </div>
+            <button class="primary-btn" id="save-firebase-config-btn">Enregistrer et continuer</button>
+            <p class="status-line" id="firebase-config-status"></p>
+            <button class="ghost-btn" data-back="menu">← Retour</button>
+        </div>
+
+        <div class="panel hidden" id="online-room-panel">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="create">Créer une partie</button>
+                <button class="tab-btn" data-tab="join">Rejoindre</button>
+            </div>
+
+            <div id="tab-create">
+                <button class="primary-btn" id="create-room-btn">Générer un code</button>
+                <div id="created-room-info" class="hidden" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+                    <div class="room-code-display" id="room-code-display"></div>
+                    <p class="status-line">Donne ce code à ton adversaire. La partie démarre dès qu'il l'a saisi.</p>
+                    <p class="status-line" id="create-status">En attente d'un adversaire…</p>
+                </div>
+            </div>
+
+            <div id="tab-join" class="hidden">
+                <div class="option-row">
+                    <label for="join-code-input">Code de la partie</label>
+                    <input type="text" id="join-code-input" maxlength="6" placeholder="EX: A3F9K1" style="text-transform:uppercase;">
+                </div>
+                <button class="primary-btn" id="join-room-btn">Rejoindre</button>
+                <p class="status-line" id="join-status"></p>
+            </div>
+
+            <button class="ghost-btn" id="forget-firebase-btn" style="align-self:flex-start;">Changer de config Firebase</button>
+            <button class="ghost-btn" data-back="menu">← Retour</button>
+        </div>
+    </section>
+
+    <!-- ======================= GAME ======================= -->
+    <section id="screen-game" class="screen hidden">
+        <div class="game-topbar">
+            <button class="ghost-btn" id="quit-btn">← Quitter</button>
+            <div id="mode-label"></div>
+            <button class="ghost-btn" id="reset-btn">Nouvelle partie</button>
+        </div>
+
+        <div class="scoreboard">
+            <div class="score-box" id="score-box-1">
+                <span class="label" id="label-p2">Joueur 2 (Haut)</span>
+                <span id="score-p2">0</span> graines
+            </div>
+            <div class="score-box" id="score-box-0">
+                <span class="label" id="label-p1">Joueur 1 (Bas)</span>
+                <span id="score-p1">0</span> graines
+            </div>
+        </div>
+
+        <div class="board">
+            <div class="row" id="row-p2">
+                <div class="pit" data-index="11">4</div>
+                <div class="pit" data-index="10">4</div>
+                <div class="pit" data-index="9">4</div>
+                <div class="pit" data-index="8">4</div>
+                <div class="pit" data-index="7">4</div>
+                <div class="pit" data-index="6">4</div>
+            </div>
+            <div class="row" id="row-p1">
+                <div class="pit" data-index="0">4</div>
+                <div class="pit" data-index="1">4</div>
+                <div class="pit" data-index="2">4</div>
+                <div class="pit" data-index="3">4</div>
+                <div class="pit" data-index="4">4</div>
+                <div class="pit" data-index="5">4</div>
+            </div>
+        </div>
+
+        <div class="turn-indicator" id="turn-indicator">À toi de jouer</div>
+
+        <div class="instructions">
+            <strong>Règles rapides :</strong> on sème une graine par trou dans le sens anti-horaire. Si la dernière graine tombe dans un trou qui contenait déjà des graines, on ramasse tout ce trou (y compris la graine posée) et on continue à semer. On s'arrête quand la dernière graine tombe dans un trou vide : on remporte alors les graines du trou opposé, de l'autre côté du plateau. Si un camp n'a plus aucune graine à son tour, l'adversaire ramasse tout ce qu'il reste sur le plateau. <span style="color:#ff3fa4;">L'anneau rose</span> indique le dernier trou joué par chaque joueur.
+        </div>
+    </section>
+
+</div>
+
+<script type="module">
+/* ============================================================
+   MOTEUR DE JEU v2 — semis en relais + capture du trou opposé
+   (fonctions pures, testées indépendamment avant intégration)
+   ------------------------------------------------------------
+   - On sème un par un, dans le sens anti-horaire.
+   - Si la DERNIÈRE graine posée tombe dans un trou qui contenait déjà
+     des graines, on ramasse tout ce trou (y compris la graine qu'on
+     vient d'y poser) et on continue à semer à partir de là.
+   - On s'arrête quand la dernière graine posée tombe dans un trou VIDE.
+   - On gagne alors les graines du trou opposé (en face, de l'autre
+     côté du plateau) à ce trou final. La graine du trou final elle-même
+     reste sur le plateau.
+   ============================================================ */
+function oppositeOf(i) { return 11 - i; }
+function pitOwner(i) { return i <= 5 ? 0 : 1; }
+
+function sumRow(board, player) {
+    let s = 0;
+    const start = player === 0 ? 0 : 6;
+    for (let i = start; i < start + 6; i++) s += board[i];
+    return s;
+}
+
+function isStarved(board, player) { return sumRow(board, player) === 0; }
+
+const MAX_RELAY_STEPS = 500; // garde-fou anti-boucle infinie (sécurité technique, pas une règle du jeu)
+
+function sowRelay(boardIn, startPit) {
+    const board = boardIn.slice();
+    let seeds = board[startPit];
+    board[startPit] = 0;
+    let curr = startPit;
+    let steps = 0;
+    let landedOnEmpty = false;
+
+    while (seeds > 0 && steps < MAX_RELAY_STEPS) {
+        curr = (curr + 1) % 12;
+        steps++;
+        const before = board[curr];
+        board[curr] += 1;
+        seeds -= 1;
+        if (seeds === 0) {
+            if (before > 0) {
+                // trou non vide -> on ramasse tout (y compris la graine posée) et on continue
+                seeds = board[curr];
+                board[curr] = 0;
+            } else {
+                landedOnEmpty = true;
+            }
+        }
+    }
+    return { board, lastPit: curr, landedOnEmpty };
+}
+
+function getValidMoves(board, player) {
+    const start = player === 0 ? 0 : 6;
+    return [start, start+1, start+2, start+3, start+4, start+5].filter(i => board[i] > 0);
+}
+
+function computeWinner(scores) {
+    if (scores[0] > scores[1]) return 0;
+    if (scores[1] > scores[0]) return 1;
+    return null;
+}
+
+function checkEnd(state) {
+    const nextPlayer = state.currentPlayer;
+    if (isStarved(state.board, nextPlayer)) {
+        const board = state.board.slice();
+        const scores = state.scores.slice();
+        for (let i = 0; i < 12; i++) { scores[pitOwner(i)] += board[i]; board[i] = 0; }
+        return { ...state, board, scores, gameOver: true, winner: computeWinner(scores) };
+    }
+    return state;
+}
+
+function makeMove(state, pit) {
+    const player = state.currentPlayer;
+    const valid = getValidMoves(state.board, player);
+    if (!valid.includes(pit)) return null;
+
+    const { board: sownBoard, lastPit, landedOnEmpty } = sowRelay(state.board, pit);
+    let finalBoard = sownBoard;
+    let captured = 0;
+
+    if (landedOnEmpty) {
+        const opp = oppositeOf(lastPit);
+        captured = finalBoard[opp];
+        if (captured > 0) {
+            finalBoard = finalBoard.slice();
+            finalBoard[opp] = 0;
+        }
+    }
+
+    const scores = state.scores.slice();
+    scores[player] += captured;
+
+    const newState = {
+        board: finalBoard, scores, currentPlayer: 1 - player,
+        gameOver: false, winner: null
+    };
+    return checkEnd(newState);
+}
+
+function initState() {
+    return { board: Array(12).fill(4), scores: [0, 0], currentPlayer: 0, gameOver: false, winner: null };
+}
+
+/* ============================================================
+   BOT (minimax + élagage alpha-bêta) — 100% local, aucune clé API
+   ============================================================ */
+function evaluate(state, botPlayer) {
+    const human = 1 - botPlayer;
+    let score = (state.scores[botPlayer] - state.scores[human]) * 100;
+    let botSeeds = 0, humanSeeds = 0;
+    for (let i = 0; i < 12; i++) {
+        if (pitOwner(i) === botPlayer) botSeeds += state.board[i]; else humanSeeds += state.board[i];
+    }
+    score += (botSeeds - humanSeeds);
+    return score;
+}
+
+function minimax(state, depth, alpha, beta, botPlayer) {
+    if (depth === 0 || state.gameOver) return evaluate(state, botPlayer);
+    const player = state.currentPlayer;
+    const moves = getValidMoves(state.board, player);
+    if (moves.length === 0) return evaluate(state, botPlayer);
+    const maximizing = player === botPlayer;
+    let best = maximizing ? -Infinity : Infinity;
+    for (const m of moves) {
+        const next = makeMove(state, m);
+        const val = minimax(next, depth - 1, alpha, beta, botPlayer);
+        if (maximizing) { best = Math.max(best, val); alpha = Math.max(alpha, best); }
+        else { best = Math.min(best, val); beta = Math.min(beta, best); }
+        if (alpha >= beta) break;
+    }
+    return best;
+}
+
+function chooseBotMove(state, botPlayer, depth) {
+    const moves = getValidMoves(state.board, botPlayer);
+    if (moves.length === 0) return null;
+    let bestMove = moves[0], bestVal = -Infinity;
+    for (const m of moves) {
+        const next = makeMove(state, m);
+        const val = minimax(next, depth - 1, -Infinity, Infinity, botPlayer);
+        if (val > bestVal) { bestVal = val; bestMove = m; }
+    }
+    return bestMove;
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const screens = ['screen-menu', 'screen-bot-setup', 'screen-online-setup', 'screen-game'];
+function showScreen(id) {
+    screens.forEach(s => $(s).classList.toggle('hidden', s !== id));
+}
+
+let mode = null;          // 'local' | 'bot' | 'online'
+let state = initState();
+let botDepth = 5;
+let botPlayer = 1;        // le bot joue toujours le camp du haut
+let onlineMyPlayer = null;
+let lastMoveByPlayer = [null, null]; // dernier trou de départ joué par chaque joueur (pour l'anneau rose)
+let onlineUnsub = null;
+let onlineRoomRef = null;
+
+const pitEls = Array.from(document.querySelectorAll('.pit'));
+
+function render() {
+    pitEls.forEach(pit => {
+        const idx = parseInt(pit.getAttribute('data-index'));
+        pit.textContent = state.board[idx];
+        pit.classList.remove('playable', 'disabled');
+        pit.classList.toggle('last-move', lastMoveByPlayer[0] === idx || lastMoveByPlayer[1] === idx);
+
+        let clickable = false;
+        if (!state.gameOver) {
+            const myTurn =
+                mode === 'local' ? true :
+                mode === 'bot' ? state.currentPlayer === 0 :
+                mode === 'online' ? state.currentPlayer === onlineMyPlayer : false;
+            const ownsThisPit = pitOwner(idx) === state.currentPlayer;
+            if (myTurn && ownsThisPit && state.board[idx] > 0) {
+                clickable = getValidMoves(state.board, state.currentPlayer).includes(idx);
+            }
+        }
+        pit.classList.add(clickable ? 'playable' : 'disabled');
+    });
+
+    $('score-p1').textContent = state.scores[0];
+    $('score-p2').textContent = state.scores[1];
+    $('score-box-0').classList.toggle('active', state.currentPlayer === 0 && !state.gameOver);
+    $('score-box-1').classList.toggle('active', state.currentPlayer === 1 && !state.gameOver);
+
+    if (state.gameOver) {
+        if (state.winner === null) {
+            $('turn-indicator').textContent = "Partie terminée ! Égalité 🤝";
+        } else {
+            const youAre = mode === 'bot' ? (state.winner === 0 ? "Tu as gagné ! 🎉" : "Le bot a gagné 🤖") :
+                           mode === 'online' ? (state.winner === onlineMyPlayer ? "Tu as gagné ! 🎉" : "Ton adversaire a gagné") :
+                           (state.winner === 0 ? "Joueur 1 a gagné ! 🎉" : "Joueur 2 a gagné ! 🎉");
+            $('turn-indicator').textContent = "Partie terminée ! " + youAre;
+        }
+    } else {
+        if (mode === 'bot') {
+            $('turn-indicator').textContent = state.currentPlayer === 0 ? "À toi de jouer" : "Le bot réfléchit…";
+        } else if (mode === 'online') {
+            $('turn-indicator').textContent = state.currentPlayer === onlineMyPlayer ? "À toi de jouer" : "En attente de l'adversaire…";
+        } else {
+            $('turn-indicator').textContent = state.currentPlayer === 0 ? "À Joueur 1 de jouer (Bas)" : "À Joueur 2 de jouer (Haut)";
+        }
+    }
+}
+
+function setupModeLabels() {
+    if (mode === 'bot') {
+        $('label-p1').textContent = 'Toi (Bas)';
+        $('label-p2').textContent = 'Bot (Haut)';
+        $('mode-label').textContent = '🤖 Contre le bot';
+    } else if (mode === 'online') {
+        $('label-p1').textContent = onlineMyPlayer === 0 ? 'Toi (Bas)' : 'Adversaire (Bas)';
+        $('label-p2').textContent = onlineMyPlayer === 1 ? 'Toi (Haut)' : 'Adversaire (Haut)';
+        $('mode-label').textContent = '🌐 En ligne';
+    } else {
+        $('label-p1').textContent = 'Joueur 1 (Bas)';
+        $('label-p2').textContent = 'Joueur 2 (Haut)';
+        $('mode-label').textContent = '🤝 2 joueurs';
+    }
+}
+
+function afterMove() {
+    render();
+    if (state.gameOver) return;
+    if (mode === 'bot' && state.currentPlayer === botPlayer) {
+        setTimeout(() => {
+            const move = chooseBotMove(state, botPlayer, botDepth);
+            if (move !== null) {
+                lastMoveByPlayer[botPlayer] = move;
+                state = makeMove(state, move);
+                afterMove();
+            }
+        }, 500);
+    } else if (mode === 'online') {
+        pushOnlineState();
+    }
+}
+
+function onPitClick(idx) {
+    if (state.gameOver) return;
+    const myTurn =
+        mode === 'local' ? true :
+        mode === 'bot' ? state.currentPlayer === 0 :
+        mode === 'online' ? state.currentPlayer === onlineMyPlayer : false;
+    if (!myTurn) return;
+    const player = state.currentPlayer;
+    const next = makeMove(state, idx);
+    if (!next) return;
+    lastMoveByPlayer[player] = idx;
+    state = next;
+    afterMove();
+}
+
+pitEls.forEach(pit => {
+    pit.addEventListener('click', () => onPitClick(parseInt(pit.getAttribute('data-index'))));
+});
+
+function startLocal() {
+    mode = 'local';
+    state = initState();
+    lastMoveByPlayer = [null, null];
+    setupModeLabels();
+    showScreen('screen-game');
+    render();
+}
+
+function startBot() {
+    mode = 'bot';
+    botDepth = parseInt($('bot-difficulty').value, 10);
+    state = initState();
+    lastMoveByPlayer = [null, null];
+    setupModeLabels();
+    showScreen('screen-game');
+    render();
+}
+
+function quitToMenu() {
+    if (mode === 'online') leaveOnlineRoom();
+    mode = null;
+    showScreen('screen-menu');
+}
+
+function resetGame() {
+    lastMoveByPlayer = [null, null];
+    if (mode === 'online') {
+        state = initState();
+        pushOnlineState();
+    } else {
+        state = initState();
+    }
+    render();
+}
+
+/* ---- Navigation ---- */
+document.querySelectorAll('.mode-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const m = card.getAttribute('data-mode');
+        if (m === 'local') startLocal();
+        else if (m === 'bot') showScreen('screen-bot-setup');
+        else if (m === 'online') { showScreen('screen-online-setup'); initOnlineScreen(); }
+    });
+});
+document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => showScreen('screen-' + btn.getAttribute('data-back')));
+});
+$('bot-start-btn').addEventListener('click', startBot);
+$('quit-btn').addEventListener('click', quitToMenu);
+$('reset-btn').addEventListener('click', resetGame);
+
+/* ---- Plein écran ---- */
+const fullscreenBtn = $('fullscreen-btn');
+fullscreenBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+});
+document.addEventListener('fullscreenchange', () => {
+    fullscreenBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
+});
+
+/* ============================================================
+   MODE EN LIGNE (Firebase Firestore) — chargé à la demande
+   ============================================================ */
+let fb = null; // { app, db, doc, setDoc, updateDoc, onSnapshot, getDoc }
+
+function getSavedFirebaseConfig() {
+    try {
+        const raw = localStorage.getItem('awale-firebase-config');
+        return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+}
+
+async function loadFirebase(config) {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js');
+    const firestore = await import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js');
+    const app = initializeApp(config);
+    const db = firestore.getFirestore(app);
+    fb = { db, doc: firestore.doc, setDoc: firestore.setDoc, updateDoc: firestore.updateDoc, onSnapshot: firestore.onSnapshot, getDoc: firestore.getDoc };
+    return fb;
+}
+
+function initOnlineScreen() {
+    const saved = getSavedFirebaseConfig();
+    if (saved) {
+        $('online-config-panel').classList.add('hidden');
+        $('online-room-panel').classList.remove('hidden');
+        loadFirebase(saved).catch(err => {
+            $('online-config-panel').classList.remove('hidden');
+            $('online-room-panel').classList.add('hidden');
+            $('firebase-config-status').textContent = "Erreur de connexion : " + err.message;
+            $('firebase-config-status').className = 'status-line err';
+        });
+    } else {
+        $('online-config-panel').classList.remove('hidden');
+        $('online-room-panel').classList.add('hidden');
+    }
+}
+
+$('show-firebase-help-btn').addEventListener('click', () => {
+    $('firebase-help').classList.toggle('hidden');
+});
+
+$('save-firebase-config-btn').addEventListener('click', async () => {
+    const raw = $('firebase-config-input').value.trim();
+    let parsed;
+    try {
+        // Autorise de coller le JS tel quel (avec ; ou des clés non-quotées minimalistes) en tentant du JSON strict d'abord.
+        parsed = JSON.parse(raw);
+    } catch {
+        try {
+            // eslint-disable-next-line no-new-func
+            parsed = Function('"use strict"; return (' + raw + ')')();
+        } catch (e2) {
+            $('firebase-config-status').textContent = "Format non reconnu — colle exactement l'objet firebaseConfig.";
+            $('firebase-config-status').className = 'status-line err';
+            return;
+        }
+    }
+    try {
+        await loadFirebase(parsed);
+        localStorage.setItem('awale-firebase-config', JSON.stringify(parsed));
+        $('firebase-config-status').textContent = "Connecté !";
+        $('firebase-config-status').className = 'status-line ok';
+        $('online-config-panel').classList.add('hidden');
+        $('online-room-panel').classList.remove('hidden');
+    } catch (e) {
+        $('firebase-config-status').textContent = "Erreur : " + e.message;
+        $('firebase-config-status').className = 'status-line err';
+    }
+});
+
+$('forget-firebase-btn').addEventListener('click', () => {
+    localStorage.removeItem('awale-firebase-config');
+    fb = null;
+    initOnlineScreen();
+});
+
+document.querySelectorAll('.tab-btn').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const which = tab.getAttribute('data-tab');
+        $('tab-create').classList.toggle('hidden', which !== 'create');
+        $('tab-join').classList.toggle('hidden', which !== 'join');
+    });
+});
+
+function randomRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+}
+
+let currentRoomCode = null;
+
+$('create-room-btn').addEventListener('click', async () => {
+    if (!fb) return;
+    const code = randomRoomCode();
+    currentRoomCode = code;
+    onlineMyPlayer = 0;
+    const initial = initState();
+    try {
+        await fb.setDoc(fb.doc(fb.db, 'rooms', code), {
+            board: initial.board, scores: initial.scores, currentPlayer: initial.currentPlayer,
+            gameOver: false, winner: null, lastMoveByPlayer: [null, null],
+            hostPresent: true, guestPresent: false, createdAt: Date.now()
+        });
+        $('room-code-display').textContent = code;
+        $('created-room-info').classList.remove('hidden');
+        $('create-status').textContent = "En attente d'un adversaire…";
+        listenRoom(code, () => {
+            const data = onlineRoomData;
+            if (data && data.guestPresent) {
+                enterOnlineGame(code);
+            }
+        });
+    } catch (e) {
+        $('create-status').textContent = "Erreur : " + e.message;
+    }
+});
+
+$('join-room-btn').addEventListener('click', async () => {
+    if (!fb) return;
+    const code = $('join-code-input').value.trim().toUpperCase();
+    if (code.length < 4) { $('join-status').textContent = "Code invalide."; return; }
+    try {
+        const ref = fb.doc(fb.db, 'rooms', code);
+        const snap = await fb.getDoc(ref);
+        if (!snap.exists()) { $('join-status').textContent = "Aucune partie avec ce code."; return; }
+        currentRoomCode = code;
+        onlineMyPlayer = 1;
+        await fb.updateDoc(ref, { guestPresent: true });
+        enterOnlineGame(code);
+    } catch (e) {
+        $('join-status').textContent = "Erreur : " + e.message;
+    }
+});
+
+let onlineRoomData = null;
+
+function listenRoom(code, onChange) {
+    if (onlineUnsub) onlineUnsub();
+    onlineRoomRef = fb.doc(fb.db, 'rooms', code);
+    onlineUnsub = fb.onSnapshot(onlineRoomRef, (snap) => {
+        if (!snap.exists()) return;
+        onlineRoomData = snap.data();
+        onChange();
+    });
+}
+
+function enterOnlineGame(code) {
+    mode = 'online';
+    setupModeLabels();
+    showScreen('screen-game');
+    listenRoom(code, () => {
+        const data = onlineRoomData;
+        if (!data) return;
+        state = {
+            board: data.board, scores: data.scores, currentPlayer: data.currentPlayer,
+            gameOver: data.gameOver, winner: data.winner
+        };
+        lastMoveByPlayer = data.lastMoveByPlayer || [null, null];
+        setupModeLabels();
+        render();
+    });
+}
+
+async function pushOnlineState() {
+    if (!fb || !onlineRoomRef) return;
+    try {
+        await fb.updateDoc(onlineRoomRef, {
+            board: state.board, scores: state.scores, currentPlayer: state.currentPlayer,
+            gameOver: state.gameOver, winner: state.winner, lastMoveByPlayer
+        });
+    } catch (e) { /* connexion perdue, l'utilisateur verra le statut se figer */ }
+}
+
+function leaveOnlineRoom() {
+    if (onlineUnsub) { onlineUnsub(); onlineUnsub = null; }
+    onlineRoomRef = null;
+    currentRoomCode = null;
+    onlineMyPlayer = null;
+    $('created-room-info').classList.add('hidden');
+    $('join-status').textContent = '';
+}
+
+/* ---- Initialisation ---- */
+showScreen('screen-menu');
+render();
+
+/* ---- Service worker (fonctionnement hors-ligne pour les modes local/bot) ---- */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+}
+</script>
+</body>
+</html>
