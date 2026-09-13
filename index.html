@@ -332,9 +332,9 @@
             <div class="option-row">
                 <label for="bot-difficulty">Difficulté</label>
                 <select id="bot-difficulty">
-                    <option value="3">Facile</option>
-                    <option value="5" selected>Moyen</option>
-                    <option value="7">Difficile</option>
+                    <option value="facile">Facile</option>
+                    <option value="moyen" selected>Moyen</option>
+                    <option value="difficile">Difficile</option>
                 </select>
             </div>
             <button class="primary-btn" id="bot-start-btn">Commencer la partie</button>
@@ -601,6 +601,12 @@ function chooseBotMove(state, botPlayer, depth) {
     return bestMove;
 }
 
+function chooseRandomMove(state, botPlayer) {
+    const moves = getValidMoves(state.board, botPlayer);
+    if (moves.length === 0) return null;
+    return moves[Math.floor(Math.random() * moves.length)];
+}
+
 /* ============================================================
    UI
    ============================================================ */
@@ -612,7 +618,8 @@ function showScreen(id) {
 
 let mode = null;          // 'local' | 'bot' | 'online'
 let state = initState();
-let botDepth = 5;
+let botDifficulty = 'moyen'; // 'facile' | 'moyen' | 'difficile'
+let botMoveCount = 0;        // compteur de coups joués par le bot (pour l'alternance en mode "moyen")
 let botPlayer = 1;        // le bot joue toujours le camp du haut
 let onlineMyPlayer = null;
 let onlineHostName = '';
@@ -717,7 +724,18 @@ function afterMove() {
     if (state.gameOver) return;
     if (mode === 'bot' && state.currentPlayer === botPlayer) {
         setTimeout(() => {
-            const move = chooseBotMove(state, botPlayer, botDepth);
+            let move;
+            if (botDifficulty === 'facile') {
+                move = chooseRandomMove(state, botPlayer);
+            } else if (botDifficulty === 'moyen') {
+                botMoveCount++;
+                // Un tour sur deux il réfléchit et joue le meilleur coup, l'autre il joue au hasard.
+                move = (botMoveCount % 2 === 1)
+                    ? chooseBotMove(state, botPlayer, 6)
+                    : chooseRandomMove(state, botPlayer);
+            } else {
+                move = chooseBotMove(state, botPlayer, 7);
+            }
             if (move !== null) {
                 lastMoveByPlayer[botPlayer] = move;
                 state = makeMove(state, move);
@@ -759,7 +777,8 @@ function startLocal() {
 
 function startBot() {
     mode = 'bot';
-    botDepth = parseInt($('bot-difficulty').value, 10);
+    botDifficulty = $('bot-difficulty').value;
+    botMoveCount = 0;
     state = initState();
     lastMoveByPlayer = [null, null];
     setupModeLabels();
@@ -775,6 +794,7 @@ function quitToMenu() {
 
 function resetGame() {
     lastMoveByPlayer = [null, null];
+    botMoveCount = 0;
     if (mode === 'online') {
         state = initState();
         pushOnlineState();
