@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#3d2412">
 
 <!-- Ajout à l'écran d'accueil sur iOS / Safari -->
@@ -406,6 +406,7 @@
         <div class="game-topbar">
             <button class="ghost-btn" id="quit-btn">← Quitter</button>
             <div id="mode-label"></div>
+            <button class="ghost-btn hidden" id="refresh-btn" title="Forcer l'actualisation">🔄</button>
             <button class="ghost-btn" id="reset-btn">Nouvelle partie</button>
         </div>
 
@@ -669,6 +670,7 @@ function render() {
 }
 
 function setupModeLabels() {
+    $('refresh-btn').classList.toggle('hidden', mode !== 'online');
     if (mode === 'bot') {
         $('label-p1').textContent = 'Toi (Bas)';
         $('label-p2').textContent = 'Bot (Haut)';
@@ -685,6 +687,30 @@ function setupModeLabels() {
         $('mode-label').textContent = '🤝 2 joueurs';
     }
 }
+
+async function forceRefreshOnline() {
+    if (!fb || !onlineRoomRef) return;
+    const btn = $('refresh-btn');
+    btn.textContent = '⏳';
+    try {
+        const snap = await fb.getDoc(onlineRoomRef);
+        if (snap.exists()) {
+            const data = snap.data();
+            onlineRoomData = data;
+            state = {
+                board: data.board, scores: data.scores, currentPlayer: data.currentPlayer,
+                gameOver: data.gameOver, winner: data.winner
+            };
+            lastMoveByPlayer = data.lastMoveByPlayer || [null, null];
+            onlineHostName = data.hostName || '';
+            onlineGuestName = data.guestName || '';
+            setupModeLabels();
+            render();
+        }
+    } catch (e) { /* tant pis, on retentera */ }
+    btn.textContent = '🔄';
+}
+$('refresh-btn').addEventListener('click', forceRefreshOnline);
 
 function afterMove() {
     render();
@@ -816,7 +842,12 @@ async function loadFirebase(config) {
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js');
     const firestore = await import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js');
     const app = initializeApp(config);
-    const db = firestore.getFirestore(app);
+    // Force la détection immédiate du mode de connexion (au lieu d'attendre ~30s
+    // qu'une tentative de WebSocket échoue silencieusement sur certains réseaux mobiles).
+    const db = firestore.initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+        useFetchStreams: false
+    });
     fb = { db, doc: firestore.doc, setDoc: firestore.setDoc, updateDoc: firestore.updateDoc, onSnapshot: firestore.onSnapshot, getDoc: firestore.getDoc };
     return fb;
 }

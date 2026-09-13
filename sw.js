@@ -1,8 +1,9 @@
-const CACHE_NAME = 'awale-cache-v1';
+const CACHE_NAME = 'awale-cache-v3';
 const ASSETS = [
     './',
     './index.html',
     './manifest.json',
+    './apple-touch-icon.png',
     './icons/icon-192.png',
     './icons/icon-512.png',
     './icons/apple-touch-icon.png'
@@ -29,7 +30,16 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     // On ne touche qu'aux fichiers du site lui-même : Firebase / CDN passent directement au réseau.
     if (url.origin !== self.location.origin) return;
+
+    // Réseau d'abord (pour toujours avoir la dernière version en ligne),
+    // et seulement si le réseau échoue (hors-ligne) on retombe sur le cache.
     event.respondWith(
-        caches.match(event.request).then((cached) => cached || fetch(event.request))
+        fetch(event.request)
+            .then((response) => {
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                return response;
+            })
+            .catch(() => caches.match(event.request))
     );
 });
