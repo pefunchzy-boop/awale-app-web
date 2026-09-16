@@ -295,6 +295,158 @@
 
     .copy-row { display: flex; gap: 8px; }
     .copy-row input { flex: 1; }
+
+    /* ---- Chat ---- */
+    .chat-btn-wrap { position: relative; }
+    .chat-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: #ff3fa4;
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: bold;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 3px;
+    }
+    .chat-panel {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        max-width: 640px;
+        margin: 0 auto;
+        background: var(--panel);
+        border: 1px solid #3a2a1c;
+        border-bottom: none;
+        border-radius: 16px 16px 0 0;
+        display: flex;
+        flex-direction: column;
+        height: 60vh;
+        max-height: 480px;
+        box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+        z-index: 50;
+        transform: translateY(100%);
+        transition: transform 0.2s ease;
+    }
+    .chat-panel.open { transform: translateY(0); }
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid #3a2a1c;
+        font-size: 0.9rem;
+        color: var(--text-dim);
+    }
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .chat-msg {
+        max-width: 78%;
+        padding: 7px 11px;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+    .chat-msg .chat-sender {
+        display: block;
+        font-size: 0.68rem;
+        color: var(--text-dim);
+        margin-bottom: 2px;
+    }
+    .chat-msg.mine { align-self: flex-end; background: #5a3a20; border: 1px solid #6b4226; }
+    .chat-msg.theirs { align-self: flex-start; background: var(--wood-dark); border: 1px solid #3a2a1c; }
+    .chat-input-row {
+        display: flex;
+        gap: 8px;
+        padding: 10px 14px;
+        border-top: 1px solid #3a2a1c;
+    }
+    .chat-input-row input {
+        flex: 1;
+        background: var(--wood-dark);
+        color: var(--text);
+        border: 1px solid #52351e;
+        border-radius: 20px;
+        padding: 9px 14px;
+        font-size: 0.9rem;
+    }
+    .chat-send-btn {
+        background: var(--accent);
+        color: #24170a;
+        border: none;
+        border-radius: 20px;
+        padding: 9px 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .chat-command-status {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        text-align: center;
+        padding: 0 14px 8px;
+        min-height: 14px;
+    }
+
+    /* ---- Bac à sable (/test) ---- */
+    .sandbox-box {
+        border-bottom: 1px solid #3a2a1c;
+        padding: 10px 14px;
+        background: rgba(0,0,0,0.15);
+    }
+    .sandbox-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+        gap: 8px;
+    }
+    .sandbox-toolbar .sandbox-actions { display: flex; gap: 4px; }
+    .sandbox-toolbar button {
+        background: transparent;
+        border: 1px solid #3a2a1c;
+        color: var(--text-dim);
+        border-radius: 6px;
+        padding: 3px 7px;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    .sandbox-board { display: flex; flex-direction: column; gap: 6px; }
+    .sandbox-row { display: flex; justify-content: space-between; gap: 6px; }
+    .sandbox-pit {
+        width: 15%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #4a2e16, var(--pit-bg));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        font-weight: bold;
+        color: var(--seed);
+        cursor: pointer;
+        box-shadow: inset 0 4px 8px rgba(0,0,0,0.65);
+        user-select: none;
+    }
+    .sandbox-pit:active { transform: scale(0.9); }
+    .sandbox-turn {
+        font-size: 0.72rem;
+        color: var(--highlight);
+        text-align: center;
+        margin-top: 6px;
+    }
 </style>
 </head>
 <body>
@@ -406,6 +558,9 @@
         <div class="game-topbar">
             <button class="ghost-btn" id="quit-btn">← Quitter</button>
             <div id="mode-label"></div>
+            <div class="chat-btn-wrap">
+                <button class="ghost-btn hidden" id="chat-toggle-btn" title="Discuter">💬<span class="chat-badge hidden" id="chat-badge">0</span></button>
+            </div>
             <button class="ghost-btn hidden" id="refresh-btn" title="Forcer l'actualisation">🔄</button>
             <button class="ghost-btn" id="reset-btn">Nouvelle partie</button>
         </div>
@@ -446,6 +601,36 @@
             <strong>Règles rapides :</strong> on sème une graine par trou dans le sens anti-horaire. Si la dernière graine tombe dans un trou qui contenait déjà des graines, on ramasse tout ce trou (y compris la graine posée) et on continue à semer. On s'arrête quand la dernière graine tombe dans un trou vide : on remporte alors les graines du trou opposé, de l'autre côté du plateau. Si un camp n'a plus aucune graine à son tour, l'adversaire ramasse tout ce qu'il reste sur le plateau. <span style="color:#ff3fa4;">L'anneau rose</span> indique le dernier trou joué par chaque joueur.
         </div>
     </section>
+
+    <!-- ======================= CHAT (mode en ligne) ======================= -->
+    <div class="chat-panel" id="chat-panel">
+        <div class="chat-header">
+            <span>💬 Discussion</span>
+            <button class="ghost-btn" id="chat-close-btn">✕</button>
+        </div>
+
+        <div class="sandbox-box hidden" id="sandbox-box">
+            <div class="sandbox-toolbar">
+                <span>🧪 Bac à sable — essais libres, pas synchronisé</span>
+                <div class="sandbox-actions">
+                    <button id="sandbox-reset-btn" title="Revenir à la position actuelle">🔄</button>
+                    <button id="sandbox-close-btn" title="Fermer">✕</button>
+                </div>
+            </div>
+            <div class="sandbox-board">
+                <div class="sandbox-row" id="sandbox-row-top"></div>
+                <div class="sandbox-row" id="sandbox-row-bottom"></div>
+            </div>
+            <div class="sandbox-turn" id="sandbox-turn-indicator"></div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-command-status" id="chat-command-status"></div>
+        <div class="chat-input-row">
+            <input type="text" id="chat-input" maxlength="200" placeholder="Écris un message… (essaie /test)">
+            <button class="chat-send-btn" id="chat-send-btn">Envoyer</button>
+        </div>
+    </div>
 
 </div>
 
@@ -674,10 +859,13 @@ function render() {
             $('turn-indicator').textContent = state.currentPlayer === 0 ? "À Joueur 1 de jouer (Bas)" : "À Joueur 2 de jouer (Haut)";
         }
     }
+
+    maybeAutoPlay();
 }
 
 function setupModeLabels() {
     $('refresh-btn').classList.toggle('hidden', mode !== 'online');
+    $('chat-toggle-btn').classList.toggle('hidden', mode !== 'online');
     if (mode === 'bot') {
         $('label-p1').textContent = 'Toi (Bas)';
         $('label-p2').textContent = 'Bot (Haut)';
@@ -868,7 +1056,12 @@ async function loadFirebase(config) {
         experimentalAutoDetectLongPolling: true,
         useFetchStreams: false
     });
-    fb = { db, doc: firestore.doc, setDoc: firestore.setDoc, updateDoc: firestore.updateDoc, onSnapshot: firestore.onSnapshot, getDoc: firestore.getDoc };
+    fb = {
+        db, doc: firestore.doc, setDoc: firestore.setDoc, updateDoc: firestore.updateDoc,
+        onSnapshot: firestore.onSnapshot, getDoc: firestore.getDoc,
+        collection: firestore.collection, addDoc: firestore.addDoc,
+        query: firestore.query, orderBy: firestore.orderBy, limit: firestore.limit
+    };
     return fb;
 }
 
@@ -1031,6 +1224,7 @@ function enterOnlineGame(code) {
         setupModeLabels();
         render();
     });
+    listenChat(code);
 }
 
 async function pushOnlineState() {
@@ -1043,8 +1237,210 @@ async function pushOnlineState() {
     } catch (e) { /* connexion perdue, l'utilisateur verra le statut se figer */ }
 }
 
+/* ---- Chat ---- */
+let chatUnsub = null;
+let chatMessages = [];
+let chatOpen = false;
+let chatUnread = 0;
+
+function listenChat(code) {
+    if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+    chatMessages = [];
+    chatUnread = 0;
+    updateChatBadge();
+    const q = fb.query(fb.collection(fb.db, 'rooms', code, 'messages'), fb.orderBy('ts'), fb.limit(200));
+    chatUnsub = fb.onSnapshot(q, (snap) => {
+        const wasOpen = chatOpen;
+        const previousCount = chatMessages.length;
+        chatMessages = snap.docs.map(d => d.data());
+        renderChatMessages();
+        if (!wasOpen && chatMessages.length > previousCount) {
+            chatUnread += (chatMessages.length - previousCount);
+            updateChatBadge();
+        }
+    });
+}
+
+function updateChatBadge() {
+    const badge = $('chat-badge');
+    if (chatUnread > 0) {
+        badge.textContent = chatUnread > 9 ? '9+' : String(chatUnread);
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+function renderChatMessages() {
+    const box = $('chat-messages');
+    box.innerHTML = '';
+    chatMessages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'chat-msg ' + (m.player === onlineMyPlayer ? 'mine' : 'theirs');
+        const senderSpan = document.createElement('span');
+        senderSpan.className = 'chat-sender';
+        senderSpan.textContent = m.sender || (m.player === 0 ? 'Joueur 1' : 'Joueur 2');
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        div.appendChild(senderSpan);
+        div.appendChild(textDiv);
+        box.appendChild(div);
+    });
+    box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = $('chat-input');
+    const raw = input.value.trim();
+    if (!raw) return;
+    input.value = '';
+
+    if (raw.startsWith('/')) {
+        handleChatCommand(raw);
+        return;
+    }
+
+    const text = raw.slice(0, 200);
+    if (!fb || !currentRoomCode) return;
+    const sender = onlineMyPlayer === 0 ? (onlineHostName || 'Joueur 1') : (onlineGuestName || 'Joueur 2');
+    try {
+        await fb.addDoc(fb.collection(fb.db, 'rooms', currentRoomCode, 'messages'), {
+            text, sender, player: onlineMyPlayer, ts: Date.now()
+        });
+    } catch (e) { /* message perdu, tant pis */ }
+}
+
+/* ---- Commandes locales (jamais envoyées dans le chat partagé) ---- */
+function setCommandStatus(text) {
+    $('chat-command-status').textContent = text;
+}
+
+function handleChatCommand(raw) {
+    const cmd = raw.toLowerCase();
+    if (cmd === '/test') {
+        openSandbox();
+        setCommandStatus('🧪 Bac à sable ouvert — reflète la position actuelle');
+    } else if (cmd === '/autojoue' || cmd === '/auto') {
+        autoPlayEnabled = !autoPlayEnabled;
+        setCommandStatus(autoPlayEnabled
+            ? '🤖 Auto-jeu activé (retape /autojoue pour arrêter)'
+            : '🤖 Auto-jeu désactivé');
+        if (autoPlayEnabled) maybeAutoPlay();
+    } else {
+        setCommandStatus('Commande inconnue : ' + raw);
+    }
+}
+
+/* ---- Pilote automatique (/autojoue) ---- */
+let autoPlayEnabled = false;
+let autoPlayScheduled = false;
+
+function maybeAutoPlay() {
+    if (!autoPlayEnabled || mode !== 'online' || !state || state.gameOver) return;
+    if (state.currentPlayer !== onlineMyPlayer) return;
+    if (autoPlayScheduled) return;
+    autoPlayScheduled = true;
+    setTimeout(() => {
+        autoPlayScheduled = false;
+        if (!autoPlayEnabled || mode !== 'online' || !state || state.gameOver) return;
+        if (state.currentPlayer !== onlineMyPlayer) return;
+        const move = chooseBotMove(state, onlineMyPlayer, 7);
+        if (move !== null) {
+            lastMoveByPlayer[onlineMyPlayer] = move;
+            state = makeMove(state, move);
+            render();
+            pushOnlineState();
+        }
+    }, 600 + Math.random() * 900);
+}
+
+/* ---- Bac à sable (/test) ---- */
+let sandboxState = null;
+
+function buildSandboxBoard() {
+    const topOrder = [11, 10, 9, 8, 7, 6];
+    const bottomOrder = [0, 1, 2, 3, 4, 5];
+    const topRow = $('sandbox-row-top');
+    const bottomRow = $('sandbox-row-bottom');
+    topOrder.forEach(i => {
+        const d = document.createElement('div');
+        d.className = 'sandbox-pit';
+        d.dataset.index = i;
+        d.addEventListener('click', () => onSandboxPitClick(i));
+        topRow.appendChild(d);
+    });
+    bottomOrder.forEach(i => {
+        const d = document.createElement('div');
+        d.className = 'sandbox-pit';
+        d.dataset.index = i;
+        d.addEventListener('click', () => onSandboxPitClick(i));
+        bottomRow.appendChild(d);
+    });
+}
+buildSandboxBoard();
+
+function openSandbox() {
+    sandboxState = { board: state.board.slice(), scores: state.scores.slice(), currentPlayer: state.currentPlayer, gameOver: false, winner: null };
+    $('sandbox-box').classList.remove('hidden');
+    if (!chatOpen) openChat();
+    renderSandbox();
+}
+function resetSandbox() {
+    if (!sandboxState) return;
+    sandboxState = { board: state.board.slice(), scores: state.scores.slice(), currentPlayer: state.currentPlayer, gameOver: false, winner: null };
+    renderSandbox();
+}
+function closeSandbox() {
+    $('sandbox-box').classList.add('hidden');
+    sandboxState = null;
+}
+function onSandboxPitClick(idx) {
+    if (!sandboxState || sandboxState.gameOver) return;
+    const next = makeMove(sandboxState, idx);
+    if (!next) return;
+    sandboxState = next;
+    renderSandbox();
+}
+function renderSandbox() {
+    if (!sandboxState) return;
+    document.querySelectorAll('.sandbox-pit').forEach(pit => {
+        const idx = parseInt(pit.dataset.index);
+        pit.textContent = sandboxState.board[idx];
+    });
+    $('sandbox-turn-indicator').textContent = sandboxState.gameOver
+        ? `Test terminé (${sandboxState.scores[0]} - ${sandboxState.scores[1]})`
+        : `Test : au tour du ${sandboxState.currentPlayer === 0 ? 'Bas' : 'Haut'} · ${sandboxState.scores[0]} - ${sandboxState.scores[1]}`;
+}
+$('sandbox-reset-btn').addEventListener('click', resetSandbox);
+$('sandbox-close-btn').addEventListener('click', closeSandbox);
+
+function openChat() {
+    chatOpen = true;
+    chatUnread = 0;
+    updateChatBadge();
+    $('chat-panel').classList.add('open');
+    renderChatMessages();
+}
+function closeChat() {
+    chatOpen = false;
+    $('chat-panel').classList.remove('open');
+}
+$('chat-toggle-btn').addEventListener('click', () => chatOpen ? closeChat() : openChat());
+$('chat-close-btn').addEventListener('click', closeChat);
+$('chat-send-btn').addEventListener('click', sendChatMessage);
+$('chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+
 function leaveOnlineRoom() {
     if (onlineUnsub) { onlineUnsub(); onlineUnsub = null; }
+    if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+    autoPlayEnabled = false;
+    autoPlayScheduled = false;
+    closeSandbox();
+    setCommandStatus('');
+    chatMessages = [];
+    chatUnread = 0;
+    closeChat();
+    updateChatBadge();
     onlineRoomRef = null;
     currentRoomCode = null;
     onlineMyPlayer = null;
