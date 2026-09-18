@@ -241,6 +241,33 @@
         user-select: none;
         transition: transform 0.12s, box-shadow 0.12s;
         position: relative;
+        overflow: hidden;
+        padding: 4px;
+        box-sizing: border-box;
+    }
+    
+    .pit.seeds-view {
+        font-size: 0;
+        padding: 2px;
+    }
+    
+    .seed-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-content: center;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .seed {
+        width: 18%;
+        height: 18%;
+        background: radial-gradient(circle at 30% 30%, #f5e6c8 0%, #d4b89a 40%, #8b5a2b 100%);
+        border-radius: 50%;
+        display: inline-block;
+        margin: 1%;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .pit.playable { cursor: pointer; }
     .pit.playable:hover { transform: scale(1.08); box-shadow: inset 0 6px 12px rgba(0,0,0,0.75), 0 0 0 2px var(--highlight); }
@@ -563,6 +590,7 @@
             </div>
             <button class="ghost-btn hidden" id="refresh-btn" title="Forcer l'actualisation">🔄</button>
             <button class="ghost-btn" id="reset-btn">Nouvelle partie</button>
+            <button class="ghost-btn" id="toggle-view-btn" title="Changer l'affichage">🌰/123</button>
         </div>
 
         <div class="scoreboard">
@@ -811,14 +839,57 @@ let onlineHostName = '';
 let onlineGuestName = '';
 let lastMoveByPlayer = [null, null]; // dernier trou de départ joué par chaque joueur (pour l'anneau rose)
 let onlineUnsub = null;
+let useSeedsView = false;
+
+function updatePitDisplay(pitElement, count) {
+    const seedContainer = pitElement.querySelector('.seed-container');
+    
+    if (useSeedsView) {
+        pitElement.classList.add('seeds-view');
+        if (!seedContainer) {
+            const container = document.createElement('div');
+            container.className = 'seed-container';
+            pitElement.appendChild(container);
+        }
+        const container = pitElement.querySelector('.seed-container');
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            const seed = document.createElement('div');
+            seed.className = 'seed';
+            container.appendChild(seed);
+        }
+    } else {
+        pitElement.classList.remove('seeds-view');
+        const container = pitElement.querySelector('.seed-container');
+        if (container) {
+            container.remove();
+        }
+        pitElement.textContent = count;
+    }
+}
+
+function toggleViewMode() {
+    useSeedsView = !useSeedsView;
+    localStorage.setItem('awale-view-mode', useSeedsView ? 'seeds' : 'numbers');
+    render();
+}
+
+// Charger la préférence de l'utilisateur
+const savedViewMode = localStorage.getItem('awale-view-mode');
+if (savedViewMode === 'seeds') {
+    useSeedsView = true;
+}
+
+
 let onlineRoomRef = null;
 
+$('toggle-view-btn').addEventListener('click', toggleViewMode);
 const pitEls = Array.from(document.querySelectorAll('.pit'));
 
 function render() {
     pitEls.forEach(pit => {
         const idx = parseInt(pit.getAttribute('data-index'));
-        pit.textContent = state.board[idx];
+        updatePitDisplay(pit, state.board[idx]);
         pit.classList.remove('playable', 'disabled');
         pit.classList.toggle('last-move', lastMoveByPlayer[0] === idx || lastMoveByPlayer[1] === idx);
 
